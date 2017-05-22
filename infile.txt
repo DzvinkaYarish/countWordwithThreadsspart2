@@ -1,4 +1,4 @@
 /home/dzvinka/CLionProjects/countWordspart2/austenpersuasion.txt
 /home/dzvinka/CLionProjects/countWordspart2/resA.txt
 /home/dzvinka/CLionProjects/countWordspart2/resB.txt
-1
+10

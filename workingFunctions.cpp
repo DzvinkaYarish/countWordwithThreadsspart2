@@ -31,7 +31,7 @@ bool compareFunc(const vector<string>& v1, const vector<string>& v2)
     return stoi(v1[1]) > stoi(v2[1]);
 }
 
-lines_storing_t mapToVector( words_counter_t& m1)
+lines_storing_t mapToVector(words_counter_t& m1)
 {
     lines_storing_t v;
     for(auto mapIterator = m1.begin();
@@ -46,7 +46,7 @@ lines_storing_t mapToVector( words_counter_t& m1)
     return  v;
 }
 
-void writeResToFile(string filename1, string filename2)
+void writeResToFile(const string& filename1, const string& filename2)
 {
     ofstream fileWithSortedAlph;
     ofstream fileWithSortedNumb;
@@ -76,7 +76,7 @@ void writeResToFile(string filename1, string filename2)
 
 
 
-int producer(string filename) {
+int producer(const string& filename) {
     fstream fin(filename); //full path to the file
     if (!fin.is_open()) {
         cout << "error reading from file";
@@ -147,7 +147,7 @@ int consumer()
 
 }
 
-vector<string> readFromFile(string filename) {
+vector<string> readFromFile(const string& filename) {
     vector<string> words;
     fstream fin(filename); //full path to the file
     if (!fin.is_open()) {
