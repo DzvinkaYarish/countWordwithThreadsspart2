@@ -25,9 +25,9 @@ int main() {
     auto endCount = getCurrentTimeFenced();
     writeResToFile(params[1], params[2]);
     auto endWrite = getCurrentTimeFenced();
-    cout << "Total time: " << toMilliSec(endWrite - startTime) << endl;
-    cout << "Counting words time: " << (int)toMilliSec(endCount - startTime) << endl;
-    cout << "Writing time: " << toMilliSec(endWrite - endCount) << endl;
+    cout << "Total time: " << toMilliSec(endWrite - startTime) << " milisec"<< endl;
+    cout << "Counting words time: " << (int)toMilliSec(endCount - startTime) << " milisec"<< endl;
+    cout << "Writing time: " << toMilliSec(endWrite - endCount) << " milisec" <<endl;
     cout << "Number of threads: " <<  numbofThreads << endl;
 
 }
