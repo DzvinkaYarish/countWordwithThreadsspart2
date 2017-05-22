@@ -19,10 +19,12 @@
 #include <sstream>
 
 using namespace std;
+using words_counter_t=map<string, int>;
+using lines_storing_t=vector<vector<string>>;
 
 void processWord(string& s);
 bool compareFunc(const vector<string>& v1, const vector<string>& v2);
-vector<vector<string>> mapToVector(map<string, int>& m1);
+lines_storing_t mapToVector(words_counter_t & m1);
 void writeResToFile(string filename1, string filename2);
 vector<string> readFromFile(string filename);
 int producer(string filename);

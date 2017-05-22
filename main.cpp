@@ -9,16 +9,16 @@
 int main() {
 
     vector<string> params = readFromFile(PATH_TO_SETTINGS_FILE);
-
+    int numbofThreads = stoi(params[3]);
     auto startTime = getCurrentTimeFenced();
-    thread consumingThreads[stoi(params[3])];
+    thread consumingThreads[numbofThreads];
     thread thr1 = thread(producer, params[0]);
-    for (int i  = 0; i < stoi(params[3]); i++) {
+    for (int i  = 0; i < numbofThreads; i++) {
         consumingThreads[i] = thread(consumer);
     }
 
     thr1. join();
-    for (int i = 0; i < stoi(params[3]); i++)
+    for (int i = 0; i <  numbofThreads; i++)
     {
         consumingThreads[i].join();
     }
@@ -28,6 +28,6 @@ int main() {
     cout << "Total time: " << toMilliSec(endWrite - startTime) << endl;
     cout << "Counting words time: " << (int)toMilliSec(endCount - startTime) << endl;
     cout << "Writing time: " << toMilliSec(endWrite - endCount) << endl;
-    cout << "Number of threads: " << params[3] << endl;
+    cout << "Number of threads: " <<  numbofThreads << endl;
 
 }

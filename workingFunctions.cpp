@@ -6,7 +6,7 @@
 
 
 deque<vector<string>> d;
-map<string, int> wordsCountMap;
+words_counter_t wordsCountMap;
 condition_variable cv;
 mutex mux;
 mutex mux_map;
@@ -31,9 +31,9 @@ bool compareFunc(const vector<string>& v1, const vector<string>& v2)
     return stoi(v1[1]) > stoi(v2[1]);
 }
 
-vector<vector<string>> mapToVector(map<string, int>& m1)
+lines_storing_t mapToVector( words_counter_t& m1)
 {
-    vector<vector<string>> v;
+    lines_storing_t v;
     for(auto mapIterator = m1.begin();
         mapIterator != m1.end();
         mapIterator++)
