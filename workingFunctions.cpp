@@ -5,12 +5,6 @@
 #include "workingFunctions.h"
 
 
-deque<vector<string>> d;
-words_counter_t wordsCountMap;
-condition_variable cv;
-mutex mux;
-mutex mux_map;
-atomic <bool> done = {false};
 
 void processWord(string& s)
 {
@@ -26,10 +20,7 @@ void processWord(string& s)
     s = new_s;
 }
 
-bool compareFunc(const vector<string>& v1, const vector<string>& v2)
-{
-    return stoi(v1[1]) > stoi(v2[1]);
-}
+
 
 lines_storing_t mapToVector(words_counter_t& m1)
 {
@@ -46,7 +37,7 @@ lines_storing_t mapToVector(words_counter_t& m1)
     return  v;
 }
 
-void writeResToFile(const string& filename1, const string& filename2)
+void writeResToFile(const string& filename1, const string& filename2, words_counter_t &wordsCountMap)
 {
     ofstream fileWithSortedAlph;
     ofstream fileWithSortedNumb;
@@ -62,7 +53,10 @@ void writeResToFile(const string& filename1, const string& filename2)
     }
 
     vector<vector<string>> v = mapToVector(wordsCountMap);
-    sort(v.begin(), v.end(), compareFunc);
+    sort(v.begin(), v.end(),
+    [](const vector<string>& v1, const vector<string>& v2){
+        return stoi(v1[1]) > stoi(v2[1]);
+    });
     for (vector<string> subv: v)
     {
         fileWithSortedNumb << subv[0] << " : " << subv[1] << endl;
@@ -76,8 +70,8 @@ void writeResToFile(const string& filename1, const string& filename2)
 
 
 
-int producer(const string& filename) {
-    fstream fin(filename); //full path to the file
+int producer(argsForWorkers &args) {
+    fstream fin(args.filename); //full path to the file
     if (!fin.is_open()) {
         cout << "error reading from file";
         return  0;
@@ -91,61 +85,111 @@ int producer(const string& filename) {
         if (numbLinesPerBlock == NUMB_LINES_IN_BLOCK)
         {
             {
-                lock_guard<mutex> ll(mux);
-                d.push_back(lines);
+                lock_guard<mutex> ll(args.mux_d1);
+                args.forwords.push_back(lines);
             }
-            cv.notify_one();
+            args.cv_producer.notify_one();
             lines.clear();
             numbLinesPerBlock = 0;
         } else
         {
-            numbLinesPerBlock++;
+            ++numbLinesPerBlock;
         }
 
     }
     if (lines.size() != 0)
     {
         {
-            lock_guard<mutex> ll(mux);
-            d.push_back(lines);
+            lock_guard<mutex> ll(args.mux_d1);
+            args.forwords.push_back(lines);
         }
-        cv.notify_one();
+        args.cv_producer.notify_one();
     }
-    cv.notify_all(); //notify all consumers that words have finished
-    done = true;
+    args.cv_producer.notify_all(); //notify all consumers that words have finished
+    args.done = true;
+    //cout << "done" << endl;
     return 0;
 }
-int consumer()
+int consumer(argsForWorkers &args)
 {
+    words_counter_t  localWordsCount;
+    int count =0;
     while(true)
     {
-        unique_lock<std::mutex> lk(mux);
-        if (!d.empty()) {
-            vector<string> v {d.front()};  //take our data
-            d.pop_front();
+        unique_lock<std::mutex> lk(args.mux_d2);
+        if (!args.forwords.empty()) {
+            vector<string> v {args.forwords.front()};  //take our data
+            args.forwords.pop_front();
             lk.unlock();
             string word;
             for(int i = 0; i < v.size(); i++) {
                 std::istringstream iss(v[i]);
                 while(iss >> word)
                     //cout << word << endl;
-                    processWord(word);
-                if(word !="") {
-                    lock_guard<mutex> lg(mux_map);
-                    ++wordsCountMap[word];
+                    //processWord(word);
+                    //cout << "after processsing"<<word << endl;
+                if(!word.empty()) {
+                    count++;
+                    ++localWordsCount[word];
                 }
             }
         } else {
-            if(done)
+            if(args.done)
                 break;
             else
-                cv.wait(lk);  ///when there is  no wait on any of cv notify will go away
+                args.cv_producer.wait(lk);  ///when there is  no wait on any of cv notify will go away
             /// wait also locks and unlocks mutexes
         }
+
     }
+
+    {
+        lock_guard<mutex> lg(args.mux_d2);
+        args.formaps.push_back(localWordsCount);
+    }
+
+    args.cv_consumer.notify_one();
+    args.countConsumers++;
+
+    cout << count << endl;
     return 0;
 
 }
+int MapsMerger(argsForWorkers &args)
+{
+    //int count = 0;
+
+
+    while(true) {
+        unique_lock<std::mutex> lk(args.mux_map);
+        if (args.formaps.size() > 1) {
+            words_counter_t localWordsCountMap1{args.formaps.front()};
+            args.formaps.pop_front();
+            words_counter_t localWordsCountMap2{args.formaps.front()};
+            args.formaps.pop_front();
+
+            lk.unlock();
+            for (auto wordsCountIterator = localWordsCountMap2.begin();
+                 wordsCountIterator != localWordsCountMap2.end();
+                 wordsCountIterator++) {
+                //cout << "writer " << wordsCountIterator->first << endl;
+                ++localWordsCountMap1[wordsCountIterator->first];
+            }
+            lk.lock();
+            args.formaps.push_back(localWordsCountMap1);
+            lk.unlock();
+
+        } else {
+            if (args.countConsumers == args.numbOfConsumers) {
+                break;
+            } else {
+                args.cv_consumer.wait(lk);
+            }
+        }
+    }
+    return 0;
+}
+
 
 vector<string> readFromFile(const string& filename) {
     vector<string> words;
